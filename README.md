@@ -1,5 +1,17 @@
 # Faster_RCNN
 
+I added reg loss in two_stage detector loss the result becomes more accurate
+
+![image](https://user-images.githubusercontent.com/78339081/109273958-3b291200-7856-11eb-9ff9-8af72a134899.png)
+
+![image](https://user-images.githubusercontent.com/78339081/109274115-74fa1880-7856-11eb-9e93-ec7c06517361.png)
+
+![image](https://user-images.githubusercontent.com/78339081/109274153-80e5da80-7856-11eb-9a01-91994856d2ca.png)
+
+![image](https://user-images.githubusercontent.com/78339081/109274714-28630d00-7857-11eb-85db-118cd61aaa06.png)
+
+###############version 1############################
+
 results after RPN\
 ![다운로드](https://user-images.githubusercontent.com/78339081/109132663-6dc00580-7797-11eb-9f70-1f00aa6aa44f.png)
 
