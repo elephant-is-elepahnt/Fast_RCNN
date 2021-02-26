@@ -276,6 +276,9 @@ class RPN(nn.Module):
         
         if output_mode == 'loss':
             return total_loss
+        # #added
+        elif output_mode == 'two_stage':
+            return total_loss, conf_scores, proposals, feature, GT_class, pos_anchor_idx, anc_per_img, GT_offsets
         else:
             return total_loss, conf_scores, proposals, feature, GT_class, pos_anchor_idx, anc_per_img
         
@@ -314,15 +317,23 @@ class TwoStageDetector(nn.Module):
     self.num_classes = num_classes
     self.roi_output_h, self.roi_output_w = roi_output_h, roi_output_w
 
+    #add
+    self.num_anchors = 9
+
     self.rpn = RPN()
     self.cls_layer = nn.Sequential(nn.Linear(in_dim, hidden_dim),
                                 nn.Dropout(drop_ratio),
                                 nn.ReLU(),
-                                nn.Linear(hidden_dim, num_classes))     
+                                nn.Linear(hidden_dim, num_classes))  
+    # add
+    self.reg_layer = nn.Sequential(nn.Linear(in_dim, hidden_dim),
+                                nn.Dropout(drop_ratio),
+                                nn.ReLU(),
+                                nn.Linear(hidden_dim, 4))   
                 
   def forward(self, images, bboxes):
-    rpn_loss, conf_scores, proposals, features, GT_class, pos_anchor_idx, anc_per_img = \
-      self.rpn(images, bboxes, output_mode = 'all')
+    rpn_loss, conf_scores, proposals, features, GT_class, pos_anchor_idx, anc_per_img, GT_offsets = \
+      self.rpn(images, bboxes, output_mode = 'two_stage')
     M, _ = proposals.size()
     boxes = torch.zeros((M, 5), device = proposals.device, dtype = proposals.dtype)
     boxes[:, 0] = (pos_anchor_idx//anc_per_img)  
@@ -330,10 +341,13 @@ class TwoStageDetector(nn.Module):
 
     roi_out = torchvision.ops.roi_align(features, boxes, (self.roi_output_w, self.roi_output_h))
     roi_pooled = torch.mean(roi_out, dim = (2,3))
+    #added
+    box_reg = self.reg_layer(roi_pooled)
+    reg_loss = BboxRegression(box_reg, GT_offsets, images.shape[0])
 
     class_prob = self.cls_layer(roi_pooled)
     cls_loss = torch.nn.functional.cross_entropy(class_prob, GT_class, reduction = 'sum')*1./images.shape[0]
-    total_loss = cls_loss + rpn_loss     
+    total_loss = cls_loss + rpn_loss + reg_loss   
 
     return total_loss
 
